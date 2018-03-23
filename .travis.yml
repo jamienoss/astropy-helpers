@@ -21,6 +21,9 @@ env:
     - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov"
     - PIP_DEPENDENCIES="coveralls"
     - EVENT_TYPE='push pull_request'
+    - CFLAGS="-m64"
+    - LDFLAGS="-m64"
+    - export TEST_OPENMP="True"
 
 matrix:
   include:
@@ -36,6 +39,49 @@ matrix:
       env: PYTHON_VERSION=3.6 PIP_DEPENDENCIES='git+https://github.com/sphinx-doc/sphinx.git#egg=sphinx coveralls'
            CONDA_DEPENDENCIES="setuptools cython numpy pytest-cov"
 
+    # Test gcc on OSX
+    - os: osx
+      env:
+        - PYTHON_VERSION=3.5
+      before_install:
+        - rm /usr/local/include/c++
+        - brew install gcc6
+        - CC=gcc-6
+        - CXX=g++-6;
+
+    # Test manual install of LLVM's clang and LLVM-OpenMP
+    - os: osx
+      env:
+        - PYTHON_VERSION=3.5
+        - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov cmake"
+      before_install:
+        - wget http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-apple-darwin.tar.xz
+        - tar -xvf clang+llvm-6.0.0-x86_64-apple-darwin.tar.xz
+        - loc=`pwd`
+        - path=$loc"/clang+llvm-6.0.0-x86_64-apple-darwin"
+        - export PATH=$path"/bin":$PATH
+        - export C_INCLUDE_PATH=$path"/include":$C_INCLUDE_PATH
+        - export LD_LIBRARY_PATH=$path"/lib":$LD_LIBRARY_PATH
+        - export CC=$path"/bin/clang"
+        - svn co http://llvm.org/svn/llvm-project/openmp/trunk openmp
+        - mkdir openmp-build && cd openmp-build
+        - cmake ../openmp
+        - make
+        - make install
+        - cd ../
+
+    # Test without OpenMP support
+    # Since this is using the OS shipped version of clang, this test doubles up
+    # as an exploritory test for when the shipped version has automatic OpenMP support.
+    # This test will then fail and at such a time should not be reomved but
+    # altered to explicitly remove OpenMP support.
+    - os: osx
+      env:
+        - PYTHON_VERSION=3.5
+        - export TEST_OPENMP="False"
+      before_install:
+        - echo "Default before_install ignored"
+
   # Uncomment the following if there are issues in setuptools that we
   # can't work around quickly - otherwise leave uncommented so that
   # we notice when things go wrong.
@@ -44,6 +90,18 @@ matrix:
   #   - env: PYTHON_VERSION=3.6 SETUPTOOLS_VERSION=dev DEBUG=True
   #          CONDA_DEPENDENCIES='sphinx cython numpy pytest-cov'
   #          EVENT_TYPE='push pull_request cron'
+
+# The Apple versions of clang and the source LLVM versions are not a 1-1 mapping, Apples' lag.
+# At the time of writing (2018), Travis uses Xcode <= 9.3 for which `-fopenmp` is not a recognised option.
+# We must therefore install LLVM's clang manually.
+before_install:
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm --with-clang;
+        export PATH="/usr/local/opt/llvm/bin:$PATH";
+        export C_INCLUDE_PATH="/usr/local/opt/llvm/include:$C_INCLUDE_PATH";
+        export LD_LIBRARY_PATH="/usr/local/opt/llvm/lib:$LD_LIBRARY_PATH";
+        export LDFLAGS=$LDFLAGS" -L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib";
+        export CC="/usr/local/opt/llvm/bin/clang";
+      fi
 
 install:
 

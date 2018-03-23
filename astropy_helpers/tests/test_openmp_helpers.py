@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from copy import deepcopy
 from distutils.core import Extension
 
@@ -13,6 +14,13 @@ PY3_LT_35 = sys.version_info[0] == 3 and sys.version_info[1] < 5
 
 _state = None
 
+try:
+    TEST_OPENMP = 'True' == os.environ['TEST_OPENMP']
+except KeyError:
+    if IS_APPVEYOR:
+        TEST_OPENMP = True
+    else:
+        raise
 
 def setup_function(function):
     global state
@@ -36,7 +44,10 @@ def test_add_openmp_flags_if_available():
     # for any reason on platforms on which it does work at the time of writing.
     # OpenMP doesn't work on Python 3.x where x<5 on AppVeyor though.
     if IS_TRAVIS_LINUX or IS_TRAVIS_OSX or (IS_APPVEYOR and not PY3_LT_35):
-        assert using_openmp
+        if TEST_OPENMP:
+            assert using_openmp
+        else:
+            assert not using_openmp
 
 def test_generate_openmp_enabled_py():
 
@@ -44,13 +55,15 @@ def test_generate_openmp_enabled_py():
 
     # Test file generation
     generate_openmp_enabled_py('')
+    assert os.path.isfile('openmp_enabled.py')
     from openmp_enabled import is_openmp_enabled
 
     is_openmp_enabled = is_openmp_enabled()
-    try:
-        os.remove('openmp_enabled.py', )
-    except:
-        pass
 
     # Test is_openmp_enabled()
     assert isinstance(is_openmp_enabled, bool)
+
+    if TEST_OPENMP:
+        assert is_openmp_enabled
+    else:
+        assert not is_openmp_enabled
