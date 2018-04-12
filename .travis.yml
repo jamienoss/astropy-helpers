@@ -21,8 +21,6 @@ env:
     - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov"
     - PIP_DEPENDENCIES="coveralls"
     - EVENT_TYPE='push pull_request'
-    - CFLAGS="-m64"
-    - LDFLAGS="-m64"
     - export TEST_OPENMP="True"
 
 matrix:
@@ -44,10 +42,7 @@ matrix:
       env:
         - PYTHON_VERSION=3.5
       before_install:
-        - rm /usr/local/include/c++
-        - brew install gcc6
-        - CC=gcc-6
-        - CXX=g++-6;
+        - source .brew_install_gcc6.sh
 
     # Test manual install of LLVM's clang and LLVM-OpenMP
     - os: osx
@@ -55,20 +50,7 @@ matrix:
         - PYTHON_VERSION=3.5
         - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov cmake"
       before_install:
-        - wget http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-apple-darwin.tar.xz
-        - tar -xvf clang+llvm-6.0.0-x86_64-apple-darwin.tar.xz
-        - loc=`pwd`
-        - path=$loc"/clang+llvm-6.0.0-x86_64-apple-darwin"
-        - export PATH=$path"/bin":$PATH
-        - export C_INCLUDE_PATH=$path"/include":$C_INCLUDE_PATH
-        - export LD_LIBRARY_PATH=$path"/lib":$LD_LIBRARY_PATH
-        - export CC=$path"/bin/clang"
-        - svn co http://llvm.org/svn/llvm-project/openmp/trunk openmp
-        - mkdir openmp-build && cd openmp-build
-        - cmake ../openmp
-        - make
-        - make install
-        - cd ../
+        - source .install_llvm6_and_llvm_openmp.sh
 
     # Test without OpenMP support
     # Since this is using the OS shipped version of clang, this test doubles up
@@ -95,13 +77,7 @@ matrix:
 # At the time of writing (2018), Travis uses Xcode <= 9.3 for which `-fopenmp` is not a recognised option.
 # We must therefore install LLVM's clang manually.
 before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm --with-clang;
-        export PATH="/usr/local/opt/llvm/bin:$PATH";
-        export C_INCLUDE_PATH="/usr/local/opt/llvm/include:$C_INCLUDE_PATH";
-        export LD_LIBRARY_PATH="/usr/local/opt/llvm/lib:$LD_LIBRARY_PATH";
-        export LDFLAGS=$LDFLAGS" -L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib";
-        export CC="/usr/local/opt/llvm/bin/clang";
-      fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source .brew_install_llvm_clang.sh; fi
 
 install:
 
