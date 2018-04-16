@@ -41,6 +41,7 @@ matrix:
     - os: osx
       env:
         - PYTHON_VERSION=3.5
+        - export TEST_OPENMP="True"
       before_install:
         - source .brew_install_gcc6.sh
 
@@ -49,20 +50,20 @@ matrix:
       env:
         - PYTHON_VERSION=3.5
         - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov cmake"
+        - export TEST_OPENMP="True"
       before_install:
         - source .install_llvm6_and_llvm_openmp.sh
 
-    # Test without OpenMP support
-    # Since this is using the OS shipped version of clang, this test doubles up
-    # as an exploritory test for when the shipped version has automatic OpenMP support.
-    # This test will then fail and at such a time should not be reomved but
-    # altered to explicitly remove OpenMP support.
+    # Test brew install of LLVM's clang
     - os: osx
       env:
         - PYTHON_VERSION=3.5
-        - export TEST_OPENMP="False"
+        - export TEST_OPENMP="True"
+      # The Apple versions of clang and the source LLVM versions are not a 1-1 mapping, Apples' lag.
+      # At the time of writing (2018), Travis uses Xcode <= 9.3 for which `-fopenmp` is not a recognised option.
+      # We must therefore install LLVM's clang manually.
       before_install:
-        - echo "Default before_install ignored"
+        - source .brew_install_llvm_clang.sh
 
   # Uncomment the following if there are issues in setuptools that we
   # can't work around quickly - otherwise leave uncommented so that
@@ -73,11 +74,15 @@ matrix:
   #          CONDA_DEPENDENCIES='sphinx cython numpy pytest-cov'
   #          EVENT_TYPE='push pull_request cron'
 
-# The Apple versions of clang and the source LLVM versions are not a 1-1 mapping, Apples' lag.
-# At the time of writing (2018), Travis uses Xcode <= 9.3 for which `-fopenmp` is not a recognised option.
-# We must therefore install LLVM's clang manually.
 before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source .brew_install_llvm_clang.sh; fi
+
+      # Test OSX without OpenMP support
+      # Since the matrix OSX tests use the OS shipped version of clang, they double up
+      # as exploritory tests for when the shipped version has automatic OpenMP support.
+      # These tests will then fail and at such a time a new one added to explicitly
+      # remove OpenMP support.
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export TEST_OPENMP="False";
+      else export TEST_OPENMP="True"; fi
 
 install:
 
