@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Script to brew install GCC 6.0
 

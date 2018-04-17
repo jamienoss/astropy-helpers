@@ -1,12 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 # Script to install binary package of LLVM 6.0.0 and then SVN source of
 # llvm-openmp
 
-# This should ideally be using either -v or -x for failure traceability,
-# however, these both seem to cripple Travis for this script. -e, alone,
-# will have to suffice.
-set -e
+set -ev
 
 wget http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-apple-darwin.tar.xz
 tar -xvf clang+llvm-6.0.0-x86_64-apple-darwin.tar.xz
@@ -23,4 +20,4 @@ make
 make install
 cd ../
 
-set +e
+set +ev

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Script to brew install LLVM's clang
 
