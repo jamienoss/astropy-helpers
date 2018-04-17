@@ -56,6 +56,11 @@ def test_generate_openmp_enabled_py():
     # Test file generation
     generate_openmp_enabled_py('')
     assert os.path.isfile('openmp_enabled.py')
+
+    # There is an unstable issue on OSX where the below import fails
+    # with "ImportError: No module named 'openmp_enabled'". This could be an
+    # odd race condition, alleviated by the following sleep.
+    time.sleep(60)
     from openmp_enabled import is_openmp_enabled
 
     is_openmp_enabled = is_openmp_enabled()

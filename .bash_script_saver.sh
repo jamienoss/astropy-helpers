@@ -13,5 +13,5 @@
 # script execution on OSX.
 #
 
-if [ ! -d "ci-helpers" ]; then git clone --depth 1 git://github.com/jamienoss/ci-helpers.git; fi
+if [ ! -d "ci-helpers" ]; then git clone --depth 1 git://github.com/astropy/ci-helpers.git; fi
 source ci-helpers/travis/setup_rvm_osx.sh
