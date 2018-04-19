@@ -21,7 +21,8 @@ env:
     - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov"
     - PIP_DEPENDENCIES="coveralls"
     - EVENT_TYPE='push pull_request'
-    - export TEST_OPENMP="True"
+    # The following is conditionally set in before_install
+    #- export TEST_OPENMP="True"
 
 matrix:
   include:
@@ -37,36 +38,49 @@ matrix:
       env: PYTHON_VERSION=3.6 PIP_DEPENDENCIES='git+https://github.com/sphinx-doc/sphinx.git#egg=sphinx coveralls'
            CONDA_DEPENDENCIES="setuptools cython numpy pytest-cov"
 
+    # Test conda's clang
+    - os: osx
+      env:
+        - PYTHON_VERSION=3.5
+        - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov clang llvm-openmp"
+      before_install:
+        - export TEST_OPENMP="True"
+        - export CC=/Users/travis/miniconda/bin/clang
+
     # Test gcc on OSX
     - os: osx
       env:
         - PYTHON_VERSION=3.5
-        - export TEST_OPENMP="True"
       before_install:
-        - source .bash_script_saver.sh
-        - source .brew_install_gcc6.sh
+        - export TEST_OPENMP="True"
+        - source scripts/get_ci-helpers.sh
+        - source ci-helpers/travis/bash_script_saver.sh
+        - source ci-helpers/install_scripts/brew_install_gcc6.sh
 
     # Test manual install of LLVM's clang and LLVM-OpenMP
     - os: osx
       env:
         - PYTHON_VERSION=3.5
         - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov cmake"
-        - export TEST_OPENMP="True"
       before_install:
-        - source .bash_script_saver.sh
-        - source .install_llvm6_and_llvm_openmp.sh
+        - export TEST_OPENMP="True"
+        - source scripts/get_ci-helpers.sh
+        - source ci-helpers/travis/bash_script_saver.sh
+        - source ci-helpers/install_scripts/install_llvm6_from_bin.sh
+        - source ci-helpers/install_scripts/install_llvm_openmp_from_src.sh
 
     # Test brew install of LLVM's clang
     - os: osx
       env:
         - PYTHON_VERSION=3.5
-        - export TEST_OPENMP="True"
       # The Apple versions of clang and the source LLVM versions are not a 1-1 mapping, Apples' lag.
       # At the time of writing (2018), Travis uses Xcode <= 9.3 for which `-fopenmp` is not a recognised option.
       # We must therefore install LLVM's clang manually.
       before_install:
-        - source .bash_script_saver.sh
-        - source .brew_install_llvm_clang.sh
+        - export TEST_OPENMP="True"
+        - source scripts/get_ci-helpers.sh
+        - source ci-helpers/travis/bash_script_saver.sh
+        - source ci-helpers/install_scripts/brew_install_llvm_clang.sh
 
   # Uncomment the following if there are issues in setuptools that we
   # can't work around quickly - otherwise leave uncommented so that
@@ -79,9 +93,6 @@ matrix:
 
 before_install:
 
-    # .bash_script_saver.sh fixes issues when running scripts on OSX.
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source .bash_script_saver.sh; fi
-
       # Test OSX without OpenMP support
       # Since the matrix OSX tests use the OS shipped version of clang, they double up
       # as exploritory tests for when the shipped version has automatic OpenMP support.
@@ -92,9 +103,7 @@ before_install:
 
 install:
 
-    # astropy/ci-helpers is cloned in `before_install`, however, that may have
-    # been overloaded without the clone.
-    - if [ ! -d "ci-helpers" ]; then git clone --depth 1 git://github.com/astropy/ci-helpers.git; fi
+    - source scripts/get_ci-helpers.sh
     - source ci-helpers/travis/setup_conda.sh
 
     # We cannot install the developer version of setuptools using pip because
