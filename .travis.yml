@@ -45,7 +45,7 @@ matrix:
         - CONDA_DEPENDENCIES="setuptools sphinx cython numpy pytest-cov clang llvm-openmp"
       before_install:
         - export TEST_OPENMP="True"
-        - export CC=/Users/travis/miniconda/bin/clang
+        - export CC=/Users/travis/miniconda/envs/test/bin/clang
 
     # Test gcc on OSX
     - os: osx
